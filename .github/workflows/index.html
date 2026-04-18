@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>UJU AI</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+
+:root {
+  --sky:     #38bdf8;
+  --sky-mid: #0ea5e9;
+  --sky-deep:#0284c7;
+  --sky-bg:  #f0f9ff;
+  --sky-soft:#e0f2fe;
+  --white:   #ffffff;
+  --text:    #0c1a2e;
+  --text2:   #4a6080;
+  --text3:   #94a3b8;
+  --sep:     rgba(56,189,248,0.2);
+  --font:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --r:       20px;
+}
+
+html, body { height:100%; overflow:hidden; background: var(--sky-bg); }
+
+body { font-family: var(--font); color: var(--text); display: flex; flex-direction: column; height: 100dvh; }
+
+.app { display:flex; flex-direction:column; height:100dvh; max-width:480px; margin:0 auto; width:100%; background:var(--sky-bg); }
+
+/* HEADER */
+.header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 18px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  background: var(--white);
+  border-bottom: 1px solid var(--sep);
+  flex-shrink: 0; z-index: 10;
+}
+
+.header-center { display:flex; align-items:center; gap:10px; flex:1; justify-content:center; }
+
+.header-avatar {
+  width:36px; height:36px; border-radius:50%;
+  background: linear-gradient(135deg, var(--sky), var(--sky-deep));
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  box-shadow: 0 2px 8px rgba(14,165,233,0.3);
+}
+.header-avatar svg { width:20px; height:20px; }
+
+.header-text { display:flex; flex-direction:column; gap:1px; }
+.header-name { font-size:16px; font-weight:600; letter-spacing:-0.3px; color:var(--text); line-height:1; }
+.header-sub  { font-size:11.5px; color:#22c55e; font-weight:400; }
+
+.hbtn {
+  width:34px; height:34px; border-radius:50%;
+  background:var(--sky-soft); border:none;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:background 0.15s, transform 0.12s;
+  -webkit-tap-highlight-color:transparent; flex-shrink:0;
+}
+.hbtn:active { background:var(--sep); transform:scale(0.9); }
+.hbtn svg { width:16px; height:16px; stroke:var(--sky-deep); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* THINKING BAR */
+.thinking-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:0 16px; font-size:12px; color:var(--text3);
+  height:0; opacity:0; overflow:hidden;
+  transition:height 0.25s, opacity 0.25s;
+  flex-shrink:0; background:var(--white); border-bottom:1px solid var(--sep);
+}
+.thinking-bar.show { height:28px; opacity:1; }
+.think-dots span {
+  display:inline-block; width:4px; height:4px; border-radius:50%;
+  background:var(--sky); margin:0 1.5px;
+  animation:tyBounce 1.2s ease-in-out infinite;
+}
+.think-dots span:nth-child(2){animation-delay:0.16s;}
+.think-dots span:nth-child(3){animation-delay:0.32s;}
+
+/* CHAT BOX */
+.chat-box {
+  flex:1; overflow-y:auto; padding:18px 14px 10px;
+  display:flex; flex-direction:column; gap:4px;
+  scroll-behavior:smooth; overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch; background:var(--sky-bg);
+}
+.chat-box::-webkit-scrollbar { display:none; }
+
+/* WELCOME */
+.welcome {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  flex:1; padding:40px 24px; text-align:center; gap:10px;
+  animation:fadeUp 0.45s ease both;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(18px);} to{opacity:1;transform:translateY(0);} }
+
+.welcome-icon {
+  width:88px; height:88px; border-radius:26px;
+  background:linear-gradient(135deg, var(--sky), var(--sky-deep));
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:8px; box-shadow:0 8px 28px rgba(14,165,233,0.35);
+}
+.welcome-icon svg { width:52px; height:52px; }
+
+.welcome h2 { font-size:26px; font-weight:700; letter-spacing:-0.6px; color:var(--text); line-height:1.1; }
+.welcome-tagline { font-size:14.5px; color:var(--text2); max-width:250px; line-height:1.55; font-weight:400; }
+
+.chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:10px; }
+.chip {
+  background:var(--white); border:1.5px solid var(--sep);
+  border-radius:20px; padding:9px 16px;
+  font-size:13.5px; font-family:var(--font); color:var(--sky-deep);
+  cursor:pointer; font-weight:500; letter-spacing:-0.1px;
+  -webkit-tap-highlight-color:transparent;
+  transition:background 0.15s, transform 0.12s, border-color 0.15s;
+}
+.chip:hover { background:var(--sky-soft); border-color:var(--sky); }
+.chip:active { transform:scale(0.95); }
+
+/* MESSAGES */
+.msg-row {
+  display:flex; flex-direction:column; max-width:78%;
+  animation:msgIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.msg-row.user { align-self:flex-end; align-items:flex-end; }
+.msg-row.bot  { align-self:flex-start; align-items:flex-start; }
+
+@keyframes msgIn { from{opacity:0;transform:scale(0.84) translateY(8px);} to{opacity:1;transform:scale(1) translateY(0);} }
+
+.bubble {
+  padding:11px 16px; border-radius:var(--r);
+  font-size:15.5px; line-height:1.48;
+  word-break:break-word; white-space:pre-wrap; letter-spacing:-0.15px;
+}
+.msg-row.user .bubble {
+  background:linear-gradient(135deg, var(--sky), var(--sky-deep));
+  color:#ffffff; border-bottom-right-radius:5px;
+  box-shadow:0 2px 12px rgba(14,165,233,0.28);
+}
+.msg-row.bot .bubble {
+  background:var(--white); color:var(--text);
+  border-bottom-left-radius:5px;
+  box-shadow:0 1px 6px rgba(0,0,0,0.06);
+}
+
+.msg-meta { display:flex; align-items:center; gap:4px; margin:3px 5px 6px; }
+.msg-time   { font-size:10.5px; color:var(--text3); }
+.msg-status { font-size:10.5px; color:var(--sky-mid); }
+
+.bubble-actions { display:flex; gap:4px; margin-top:3px; opacity:0; transition:opacity 0.18s; }
+.msg-row.bot:hover .bubble-actions { opacity:1; }
+
+.bab {
+  background:var(--white); border:1px solid var(--sep);
+  border-radius:10px; padding:4px 10px;
+  font-size:11.5px; color:var(--sky-deep);
+  cursor:pointer; font-family:var(--font); font-weight:500;
+  transition:background 0.12s;
+}
+.bab:active { background:var(--sky-soft); }
+
+/* TYPING */
+.typing-row { align-self:flex-start; animation:msgIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both; }
+.typing-bubble {
+  display:flex; align-items:center; gap:5px;
+  padding:13px 18px; background:var(--white);
+  border-radius:var(--r); border-bottom-left-radius:5px;
+  box-shadow:0 1px 6px rgba(0,0,0,0.06);
+}
+.tydot { width:7px; height:7px; border-radius:50%; background:var(--sky); animation:tyBounce 1.2s ease-in-out infinite; }
+.tydot:nth-child(2){animation-delay:0.16s;}
+.tydot:nth-child(3){animation-delay:0.32s;}
+@keyframes tyBounce { 0%,60%,100%{transform:translateY(0);opacity:0.4;} 30%{transform:translateY(-5px);opacity:1;} }
+
+/* SCROLL FAB */
+.scroll-fab {
+  position:fixed; bottom:106px; right:calc(50% - 228px); z-index:20;
+  width:34px; height:34px; border-radius:50%;
+  background:var(--white); border:1px solid var(--sep);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--sky-deep); font-size:15px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
+  transition:opacity 0.25s, transform 0.25s;
+  opacity:0; transform:translateY(8px); pointer-events:none;
+}
+.scroll-fab.show { opacity:1; transform:translateY(0); pointer-events:all; }
+
+/* TOAST */
+.toast {
+  position:fixed; bottom:120px; left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:var(--text); border-radius:30px;
+  padding:8px 18px; font-size:13px; color:#fff;
+  pointer-events:none; opacity:0;
+  transition:opacity 0.25s, transform 0.25s;
+  z-index:100; white-space:nowrap; font-weight:500;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* INPUT AREA */
+.input-area {
+  flex-shrink:0; padding:10px 12px 12px;
+  padding-bottom:max(12px, env(safe-area-inset-bottom));
+  background:var(--white); border-top:1px solid var(--sep);
+}
+
+.quick-row { display:flex; gap:6px; margin-bottom:8px; overflow-x:auto; padding-bottom:2px; }
+.quick-row::-webkit-scrollbar { display:none; }
+.qbtn {
+  background:var(--sky-soft); border:none; border-radius:14px;
+  padding:6px 13px; font-size:12.5px; color:var(--sky-deep);
+  cursor:pointer; white-space:nowrap; font-family:var(--font);
+  font-weight:500; flex-shrink:0; -webkit-tap-highlight-color:transparent;
+  transition:background 0.12s;
+}
+.qbtn:active { background:var(--sep); }
+
+.input-row {
+  display:flex; align-items:flex-end; gap:8px;
+  background:var(--sky-bg); border-radius:26px;
+  padding:6px 6px 6px 14px; border:1.5px solid var(--sep);
+}
+
+.input-box {
+  flex:1; background:transparent; border:none;
+  color:var(--text); font-size:15.5px; font-family:var(--font);
+  outline:none; resize:none; max-height:120px; min-height:30px;
+  line-height:1.45; letter-spacing:-0.15px; padding:3px 0;
+}
+.input-box::placeholder { color:var(--text3); }
+.input-box::-webkit-scrollbar { display:none; }
+
+.send-btn {
+  width:34px; height:34px; border-radius:50%; border:none;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; align-self:flex-end;
+  background:linear-gradient(135deg, var(--sky), var(--sky-deep));
+  box-shadow:0 2px 8px rgba(14,165,233,0.35);
+  transition:transform 0.12s, opacity 0.2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.send-btn:disabled { opacity:0.35; cursor:default; box-shadow:none; }
+.send-btn:not(:disabled):active { transform:scale(0.88); }
+.send-btn svg { width:15px; height:15px; }
+
+.attach-btn {
+  width:34px; height:34px; border-radius:50%; border:none;
+  background:var(--sky-soft); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0; align-self:flex-end; position:relative;
+  -webkit-tap-highlight-color:transparent; transition:background 0.12s;
+}
+.attach-btn:active { background:var(--sep); }
+.attach-btn svg { width:17px; height:17px; stroke:var(--sky-deep); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+.attach-menu {
+  position:absolute; bottom:46px; left:0;
+  background:var(--white); border:1px solid var(--sep);
+  border-radius:18px; padding:8px; min-width:200px;
+  box-shadow:0 8px 32px rgba(14,165,233,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  z-index:50; opacity:0; transform:translateY(8px) scale(0.96);
+  pointer-events:none;
+  transition:opacity 0.2s cubic-bezier(0.34,1.56,0.64,1), transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  transform-origin:bottom left;
+}
+.attach-menu.open { opacity:1; transform:translateY(0) scale(1); pointer-events:all; }
+
+.attach-menu-item {
+  display:flex; align-items:center; gap:12px; padding:10px 12px;
+  border-radius:12px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  transition:background 0.12s;
+}
+.attach-menu-item:active { background:var(--sky-soft); }
+
+.ami-icon { width:34px; height:34px; border-radius:10px; background:var(--sky-soft); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.ami-label { font-size:14px; color:var(--text); font-family:var(--font); font-weight:500; }
+.ami-sub   { font-size:11px; color:var(--text3); font-family:var(--font); margin-top:1px; }
+
+.attachment-strip { display:flex; gap:8px; padding:6px 0 4px; overflow-x:auto; }
+.attachment-strip:empty { display:none; }
+.attachment-strip::-webkit-scrollbar { display:none; }
+
+.att-thumb { position:relative; flex-shrink:0; border-radius:12px; overflow:hidden; border:1.5px solid var(--sep); background:var(--sky-soft); animation:attPop 0.22s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes attPop { from{opacity:0;transform:scale(0.72);} to{opacity:1;transform:scale(1);} }
+.att-thumb img { width:68px; height:68px; object-fit:cover; display:block; }
+.att-thumb-file { width:68px; height:68px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:6px; }
+.att-file-icon { font-size:22px; }
+.att-file-name { font-size:9px; color:var(--text2); text-align:center; word-break:break-all; line-height:1.3; max-width:58px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.att-remove { position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; color:#fff; }
+
+.img-bubble { border-radius:18px; overflow:hidden; max-width:220px; cursor:pointer; }
+.img-bubble:active { opacity:0.9; }
+.img-bubble img { width:100%; height:auto; max-height:240px; object-fit:cover; display:block; }
+
+.file-bubble { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--white); border-radius:18px; max-width:220px; box-shadow:0 1px 6px rgba(0,0,0,0.06); }
+.file-bubble-icon { font-size:22px; flex-shrink:0; }
+.file-bubble-name { font-size:14px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
+.file-bubble-size { font-size:11px; color:var(--text3); margin-top:1px; }
+
+.lightbox { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px); opacity:0; pointer-events:none; transition:opacity 0.22s; }
+.lightbox.open { opacity:1; pointer-events:all; }
+.lightbox img { max-width:94vw; max-height:88vh; border-radius:14px; object-fit:contain; }
+.lightbox-close { position:absolute; top:20px; right:20px; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; color:#fff; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+<div class="scroll-fab" id="scrollFab" onclick="scrollToBottom()">↓</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <div class="lightbox-close" onclick="closeLightbox(event)">✕</div>
+  <img id="lightboxImg" src="" alt="" onclick="event.stopPropagation()">
+</div>
+
+<input type="file" id="fileInputImage" accept="image/*" multiple style="display:none">
+<input type="file" id="fileInputDoc" accept=".pdf,.txt,.md,.csv,.json,.doc,.docx" multiple style="display:none">
+<input type="file" id="fileInputAny" accept="*/*" multiple style="display:none">
+
+<div class="app">
+
+  <div class="header">
+    <div class="hbtn" style="visibility:hidden"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/></svg></div>
+    <div class="header-center">
+      <div class="header-avatar">
+        <svg viewBox="0 0 36 36" fill="none">
+          <path d="M6 8 L6 22 Q6 30 18 30 Q30 30 30 22 L30 8" stroke="white" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+          <path d="M18 12 L19.4 16.6 L24 18 L19.4 19.4 L18 24 L16.6 19.4 L12 18 L16.6 16.6 Z" fill="white" opacity="0.95"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <div class="header-name">UJU AI</div>
+        <div class="header-sub">Active now</div>
+      </div>
+    </div>
+    <div class="hbtn" onclick="clearChat()">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+
+  <div class="thinking-bar" id="thinkingBar">
+    <span style="color:var(--sky-deep);font-weight:500;font-size:12px;">Thinking</span>
+    <div class="think-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <div id="chatBox" class="chat-box">
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">
+        <svg viewBox="0 0 36 36" fill="none">
+          <path d="M6 8 L6 22 Q6 30 18 30 Q30 30 30 22 L30 8" stroke="white" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+          <path d="M18 12 L19.4 16.6 L24 18 L19.4 19.4 L18 24 L16.6 19.4 L12 18 L16.6 16.6 Z" fill="white" opacity="0.95"/>
+        </svg>
+      </div>
+      <h2>Hello, I'm UJU AI</h2>
+      <p class="welcome-tagline">Ask anything — I think, respond, and evolve with you.</p>
+      <div class="chips" style="margin-top:14px;">
+        <div class="chip" onclick="quickSend('What can you do?')">What can you do?</div>
+        <div class="chip" onclick="quickSend('Tell me a surprising fact')">Surprise me</div>
+        <div class="chip" onclick="quickSend('Write a short poem about the night sky')">Night poem</div>
+        <div class="chip" onclick="quickSend('Help me brainstorm a creative idea')">Brainstorm</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area" id="inputArea">
+    <div class="quick-row">
+      <div class="qbtn" onclick="quickSend('Explain this simply')">Simplify</div>
+      <div class="qbtn" onclick="quickSend('Give me 3 alternatives')">Alternatives</div>
+      <div class="qbtn" onclick="quickSend('Make it shorter')">Shorten</div>
+      <div class="qbtn" onclick="quickSend('Continue')">Continue</div>
+      <div class="qbtn" onclick="quickSend('Summarize our conversation so far')">Summarize</div>
+    </div>
+    <div class="attachment-strip" id="attachmentStrip"></div>
+    <div class="input-row">
+      <div style="position:relative;flex-shrink:0;">
+        <div class="attach-btn" id="attachBtn" onclick="toggleAttachMenu(event)">
+          <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        </div>
+        <div class="attach-menu" id="attachMenu">
+          <div class="attach-menu-item" onclick="pickFile('image')"><div class="ami-icon">🖼️</div><div><div class="ami-label">Photo</div><div class="ami-sub">JPG, PNG, GIF</div></div></div>
+          <div class="attach-menu-item" onclick="pickFile('camera')"><div class="ami-icon">📷</div><div><div class="ami-label">Camera</div><div class="ami-sub">Take a photo</div></div></div>
+          <div class="attach-menu-item" onclick="pickFile('doc')"><div class="ami-icon">📄</div><div><div class="ami-label">Document</div><div class="ami-sub">PDF, TXT, DOC…</div></div></div>
+          <div class="attach-menu-item" onclick="pickFile('any')"><div class="ami-icon">📁</div><div><div class="ami-label">Any File</div><div class="ami-sub">All types</div></div></div>
+        </div>
+      </div>
+      <textarea id="input" class="input-box" placeholder="Message UJU AI…" rows="1" maxlength="2000"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_KEY = "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";
+const API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MODEL   = "openai/gpt-4o-mini";
+
+let chatHistory = [], isBusy = false, lastUserMsg = '';
+const chatBox  = document.getElementById('chatBox');
+const inputEl  = document.getElementById('input');
+const sendBtn  = document.getElementById('sendBtn');
+const thinkBar = document.getElementById('thinkingBar');
+const scrollFab= document.getElementById('scrollFab');
+const toastEl  = document.getElementById('toast');
+
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  updateSendBtn();
+});
+inputEl.addEventListener('keydown', e => { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!sendBtn.disabled)sendMessage();} });
+chatBox.addEventListener('scroll', () => { scrollFab.classList.toggle('show', chatBox.scrollHeight-chatBox.scrollTop-chatBox.clientHeight>120); });
+
+function scrollToBottom(){ chatBox.scrollTo({top:chatBox.scrollHeight,behavior:'smooth'}); }
+
+let toastTimer;
+function showToast(msg){ clearTimeout(toastTimer); toastEl.textContent=msg; toastEl.classList.add('show'); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2200); }
+function getTime(){ return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+
+function removeWelcome(){ const w=document.getElementById('welcome'); if(w){w.style.transition='opacity 0.25s';w.style.opacity='0';setTimeout(()=>w.remove(),260);} }
+
+function appendMessage(text, sender){
+  const row=document.createElement('div'); row.className=`msg-row ${sender}`;
+  const bubble=document.createElement('div'); bubble.className='bubble'; bubble.textContent=text; row.appendChild(bubble);
+  if(sender==='bot'){
+    const a=document.createElement('div'); a.className='bubble-actions';
+    a.innerHTML=`<div class="bab" onclick="copyMsg(this)">Copy</div><div class="bab" onclick="regenerate()">Retry</div>`;
+    row.appendChild(a);
+  }
+  const meta=document.createElement('div'); meta.className='msg-meta';
+  meta.innerHTML=`<span class="msg-time">${getTime()}</span>${sender==='user'?'<span class="msg-status">✓</span>':''}`;
+  row.appendChild(meta); chatBox.appendChild(row); scrollToBottom(); return bubble;
+}
+
+function copyMsg(btn){ navigator.clipboard.writeText(btn.closest('.msg-row').querySelector('.bubble').textContent).then(()=>showToast('Copied')); }
+
+function showTyping(){ const row=document.createElement('div'); row.className='typing-row'; row.id='typingRow'; row.innerHTML=`<div class="typing-bubble"><div class="tydot"></div><div class="tydot"></div><div class="tydot"></div></div>`; chatBox.appendChild(row); scrollToBottom(); }
+function removeTyping(){ const t=document.getElementById('typingRow'); if(t)t.remove(); }
+function quickSend(text){ inputEl.value=text; inputEl.dispatchEvent(new Event('input')); sendMessage(); }
+
+function regenerate(){
+  if(!lastUserMsg||isBusy)return;
+  const rows=chatBox.querySelectorAll('.msg-row.bot'); if(rows.length)rows[rows.length-1].remove();
+  if(chatHistory.length)chatHistory.pop();
+  inputEl.value=lastUserMsg; inputEl.dispatchEvent(new Event('input')); sendMessage();
+}
+
+async function sendMessage(){
+  const text=inputEl.value.trim();
+  if(!text&&!pendingAttachments.length)return; if(isBusy)return;
+  removeWelcome(); isBusy=true; sendBtn.disabled=true; lastUserMsg=text||'[file sent]';
+  const myAtts=[...pendingAttachments]; pendingAttachments=[]; attStrip.innerHTML='';
+  inputEl.value=''; inputEl.style.height='auto';
+  myAtts.forEach(att=>{ if(att.type==='image')appendImageBubble(att.dataUrl,'user'); else appendFileBubble(att,'user'); });
+  if(text)appendMessage(text,'user');
+  showTyping(); thinkBar.classList.add('show');
+  let fc='';
+  myAtts.forEach(att=>{ if(att.type==='file'&&typeof att.dataUrl==='string')fc+=`\n\n[Attached: ${att.name}]\n${att.dataUrl.slice(0,3000)}`; else if(att.type==='image')fc+=`\n\n[User shared image: ${att.name}]`; });
+  const userContent=(text||'')+fc||'[User sent a file]';
+  const messages=[{role:'system',content:'You are UJU AI, a warm, smart, and witty assistant. Be concise and conversational. Use line breaks for readability.'},...chatHistory.flatMap(h=>[{role:'user',content:h.user},{role:'assistant',content:h.bot}]),{role:'user',content:userContent}];
+  try{
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${API_KEY}`,'HTTP-Referer':window.location.href,'X-Title':'UJU AI'},body:JSON.stringify({model:MODEL,messages,max_tokens:1024,temperature:0.85})});
+    const data=await res.json(); removeTyping(); thinkBar.classList.remove('show');
+    const reply=data?.choices?.[0]?.message?.content||data?.error?.message||"Couldn't get a response.";
+    const bubble=appendMessage('','bot'); let i=0;
+    function type(){ if(i<reply.length){bubble.textContent+=reply[i++];scrollToBottom();setTimeout(type,reply.length>500?6:12);}else{isBusy=false;updateSendBtn();const ur=chatBox.querySelectorAll('.msg-row.user');if(ur.length){const st=ur[ur.length-1].querySelector('.msg-status');if(st)st.textContent='✓✓';}} }
+    type(); chatHistory.push({user:userContent,bot:reply}); if(chatHistory.length>24)chatHistory.shift();
+  }catch(err){ removeTyping(); thinkBar.classList.remove('show'); appendMessage('Connection error. Please try again.','bot'); isBusy=false; updateSendBtn(); }
+}
+
+function clearChat(){
+  chatHistory=[]; pendingAttachments=[]; document.getElementById('attachmentStrip').innerHTML='';
+  chatBox.innerHTML=`<div class="welcome" id="welcome"><div class="welcome-icon"><svg viewBox="0 0 36 36" fill="none"><path d="M6 8 L6 22 Q6 30 18 30 Q30 30 30 22 L30 8" stroke="white" stroke-width="3.2" stroke-linecap="round" fill="none"/><path d="M18 12 L19.4 16.6 L24 18 L19.4 19.4 L18 24 L16.6 19.4 L12 18 L16.6 16.6 Z" fill="white" opacity="0.95"/></svg></div><h2>Hello, I'm UJU AI</h2><p class="welcome-tagline">Ask anything — I think, respond, and evolve with you.</p><div class="chips" style="margin-top:14px;"><div class="chip" onclick="quickSend('What can you do?')">What can you do?</div><div class="chip" onclick="quickSend('Tell me a surprising fact')">Surprise me</div><div class="chip" onclick="quickSend('Write a short poem about the night sky')">Night poem</div><div class="chip" onclick="quickSend('Help me brainstorm a creative idea')">Brainstorm</div></div></div>`;
+  showToast('New chat');
+}
+
+let pendingAttachments=[], attachMenuOpen=false;
+const attachMenu=document.getElementById('attachMenu');
+const attStrip=document.getElementById('attachmentStrip');
+const fInputImg=document.getElementById('fileInputImage');
+const fInputDoc=document.getElementById('fileInputDoc');
+const fInputAny=document.getElementById('fileInputAny');
+
+function toggleAttachMenu(e){ e.stopPropagation(); attachMenuOpen=!attachMenuOpen; attachMenu.classList.toggle('open',attachMenuOpen); }
+document.addEventListener('click',()=>{ if(attachMenuOpen){attachMenuOpen=false;attachMenu.classList.remove('open');} });
+
+function pickFile(type){
+  attachMenuOpen=false; attachMenu.classList.remove('open');
+  if(type==='image'){fInputImg.value='';fInputImg.click();}
+  else if(type==='camera'){const t=document.createElement('input');t.type='file';t.accept='image/*';t.capture='environment';t.onchange=e=>handleFiles(e.target.files);t.click();}
+  else if(type==='doc'){fInputDoc.value='';fInputDoc.click();}
+  else{fInputAny.value='';fInputAny.click();}
+}
+
+fInputImg.addEventListener('change',e=>handleFiles(e.target.files));
+fInputDoc.addEventListener('change',e=>handleFiles(e.target.files));
+fInputAny.addEventListener('change',e=>handleFiles(e.target.files));
+
+function handleFiles(fileList){
+  Array.from(fileList).forEach(file=>{
+    const isImage=file.type.startsWith('image/');
+    const reader=new FileReader();
+    reader.onload=ev=>{ pendingAttachments.push({type:isImage?'image':'file',file,dataUrl:ev.target.result,name:file.name,size:file.size}); renderAttachStrip(); updateSendBtn(); };
+    if(isImage)reader.readAsDataURL(file); else reader.readAsText(file);
+  });
+}
+
+function formatSize(b){ if(b<1024)return b+'B'; if(b<1048576)return(b/1024).toFixed(1)+'KB'; return(b/1048576).toFixed(1)+'MB'; }
+function getFileEmoji(n){ return{pdf:'📕',txt:'📝',md:'📝',csv:'📊',json:'🗂️',doc:'📘',docx:'📘',xls:'📗',xlsx:'📗',zip:'📦',mp3:'🎵',mp4:'🎬'}[n.split('.').pop().toLowerCase()]||'📄'; }
+
+function renderAttachStrip(){
+  attStrip.innerHTML='';
+  pendingAttachments.forEach((att,idx)=>{
+    const t=document.createElement('div'); t.className='att-thumb';
+    t.innerHTML=att.type==='image'?`<img src="${att.dataUrl}" alt="${att.name}"><div class="att-remove" onclick="removeAtt(${idx})">✕</div>`:`<div class="att-thumb-file"><div class="att-file-icon">${getFileEmoji(att.name)}</div><div class="att-file-name">${att.name}</div></div><div class="att-remove" onclick="removeAtt(${idx})">✕</div>`;
+    attStrip.appendChild(t);
+  });
+}
+
+function removeAtt(idx){ pendingAttachments.splice(idx,1); renderAttachStrip(); updateSendBtn(); }
+function updateSendBtn(){ sendBtn.disabled=(!inputEl.value.trim()&&!pendingAttachments.length)||isBusy; }
+
+function appendImageBubble(dataUrl,sender){ const row=document.createElement('div'); row.className=`msg-row ${sender}`; const wrap=document.createElement('div'); wrap.className='img-bubble'; wrap.onclick=()=>openLightbox(dataUrl); const img=document.createElement('img'); img.src=dataUrl; img.alt='Image'; wrap.appendChild(img); row.appendChild(wrap); chatBox.appendChild(row); scrollToBottom(); }
+function appendFileBubble(att,sender){ const row=document.createElement('div'); row.className=`msg-row ${sender}`; const fb=document.createElement('div'); fb.className='file-bubble'; fb.innerHTML=`<div class="file-bubble-icon">${getFileEmoji(att.name)}</div><div><div class="file-bubble-name">${att.name}</div><div class="file-bubble-size">${formatSize(att.size)}</div></div>`; row.appendChild(fb); chatBox.appendChild(row); scrollToBottom(); }
+
+function openLightbox(src){ document.getElementById('lightboxImg').src=src; document.getElementById('lightbox').classList.add('open'); }
+function closeLightbox(e){ if(e)e.stopPropagation(); document.getElementById('lightbox').classList.remove('open'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeLightbox(); });
+</script>
+</body>
+</html>
